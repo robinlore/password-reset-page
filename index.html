@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Reset</title>
+    <title>Reset Your Password</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = https://nlkwvxqggvlmjbeympzi.supabase.co
@@ -11,28 +11,29 @@
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
         async function resetPassword() {
-            const newPassword = document.getElementById('newPassword').value
-            const { error } = await supabase.auth.updateUser({ password: newPassword })
-            
-            if (error) {
-                alert('Error resetting password: ' + error.message)
-            } else {
-                document.getElementById('resetForm').style.display = 'none'
-                document.getElementById('successMessage').style.display = 'block'
+            const newPassword = document.getElementById('newPassword').value;
+            console.log("Attempting to reset password...");
+            try {
+                const { error } = await supabase.auth.updateUser({ password: newPassword });
+                if (error) {
+                    console.error("Error resetting password:", error);
+                    alert('Error resetting password: ' + error.message);
+                } else {
+                    console.log("Password reset successful");
+                    alert('Password reset successful. Please return to the app and sign in with your new password.');
+                }
+            } catch (error) {
+                console.error("Exception during password reset:", error);
+                alert('An error occurred during password reset');
             }
         }
     </script>
 </head>
 <body>
-    <div id="resetForm">
-        <h1>Reset Your Password</h1>
-        <input type="password" id="newPassword" placeholder="Enter new password">
-        <button onclick="resetPassword()">Reset Password</button>
-    </div>
-    <div id="successMessage" style="display: none;">
-        <h1>Password Reset Successful</h1>
-        <p>Your password has been successfully reset. Please return to the app and sign in with your new password.</p>
-        <a href="precisionpill://passwordReset">Return to App</a>
-    </div>
+    <h1>Reset Your Password</h1>
+    <form onsubmit="resetPassword(); return false;">
+        <input type="password" id="newPassword" placeholder="Enter new password" required>
+        <button type="submit">Reset Password</button>
+    </form>
 </body>
 </html>
