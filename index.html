@@ -14,12 +14,12 @@
             const newPassword = document.getElementById('newPassword').value;
             console.log("Attempting to reset password...");
             try {
-                const { error } = await supabase.auth.updateUser({ password: newPassword });
+                const { data, error } = await supabase.auth.updateUser({ password: newPassword });
                 if (error) {
                     console.error("Error resetting password:", error);
                     alert('Error resetting password: ' + error.message);
                 } else {
-                    console.log("Password reset successful");
+                    console.log("Password reset successful", data);
                     alert('Password reset successful. Please return to the app and sign in with your new password.');
                 }
             } catch (error) {
