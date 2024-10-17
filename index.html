@@ -28,41 +28,30 @@
             }
 
             function getURLParameter(name) {
-                const urlParams = new URLSearchParams(window.location.hash.slice(1));
+                const urlParams = new URLSearchParams(window.location.search);
                 return urlParams.get(name);
             }
 
             function parseURL() {
                 debugLog(`Full URL: ${window.location.href}`);
-                debugLog(`URL Hash: ${window.location.hash}`);
+                debugLog(`URL Search: ${window.location.search}`);
                 
-                const urlParams = new URLSearchParams(window.location.hash.slice(1));
+                const urlParams = new URLSearchParams(window.location.search);
                 urlParams.forEach((value, key) => {
                     debugLog(`Parameter: ${key} = ${value}`);
                 });
             }
 
-            function checkForErrors() {
-                const urlParams = new URLSearchParams(window.location.hash.slice(1));
-                const error = urlParams.get('error');
-                const errorDescription = urlParams.get('error_description');
-                if (error) {
-                    debugLog(`Error: ${error}`);
-                    debugLog(`Error Description: ${errorDescription}`);
-                    document.getElementById('debug').innerHTML += `<p style="color: red;">Error: ${errorDescription}</p>`;
-                }
-            }
+            async function handlePasswordReset() {
+                const token = getURLParameter('token');
+                const type = getURLParameter('type');
 
-            async function handleRedirect() {
-                const hashParams = new URLSearchParams(window.location.hash.slice(1));
-                const accessToken = hashParams.get('access_token');
-                if (accessToken) {
-                    debugLog('Access token found in URL');
-                    // Here you can automatically attempt to reset the password
-                    // or show a form for the user to enter their new password
+                if (token && type === 'recovery') {
+                    debugLog('Token found in URL. Ready for password reset.');
+                    document.getElementById('resetForm').style.display = 'block';
                 } else {
-                    debugLog('No access token found in URL');
-                    checkForErrors();
+                    debugLog('No valid token found. Cannot reset password.');
+                    document.getElementById('resetForm').style.display = 'none';
                 }
             }
 
@@ -70,27 +59,27 @@
                 event.preventDefault();
                 debugLog('Reset password function called');
                 
-                parseURL();
                 const newPassword = document.getElementById('newPassword').value;
-                const accessToken = getURLParameter('access_token');
-                debugLog(`Access token: ${accessToken ? 'Found' : 'Not found'}`);
-                if (!accessToken) {
-                    debugLog('No access token found. Please request a new password reset link.');
+                const token = getURLParameter('token');
+
+                if (!token) {
+                    debugLog('No token found. Please request a new password reset link.');
                     return;
                 }
+
                 try {
                     debugLog('Attempting to update user password');
                     const { data, error } = await supabaseClient.auth.updateUser(
                         { password: newPassword },
-                        { accessToken: accessToken }
+                        { accessToken: token }
                     );
+
                     if (error) {
                         console.error("Error resetting password:", error);
                         debugLog(`Error resetting password: ${error.message}`);
                     } else {
                         console.log("Password reset successful", data);
                         debugLog('Password reset successful. Please return to the app and sign in with your new password.');
-                        // You might want to redirect the user or show a success message here
                     }
                 } catch (error) {
                     console.error("Exception during password reset:", error);
@@ -100,8 +89,8 @@
 
             document.getElementById('resetForm').addEventListener('submit', resetPassword);
             debugLog('Page loaded and script executed');
-            parseURL(); // Parse URL on page load
-            handleRedirect(); // Handle redirect and check for errors
+            parseURL();
+            handlePasswordReset();
         });
     </script>
 </body>
