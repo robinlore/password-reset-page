@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "9LSJ8MWSZ9.com-robin.PrecisionPillTracking",
+        "paths": ["/password-reset-page/*"]
+      }
+    ]
+  }
+}
