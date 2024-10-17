@@ -32,11 +32,23 @@
             }
 
             function handleRedirect() {
+                console.log("Full URL:", window.location.href);
+                console.log("Search params:", window.location.search);
+                console.log("Hash:", window.location.hash);
+
                 const accessToken = getURLParameter('access_token');
+                const error = getURLParameter('error');
+                const errorDescription = getURLParameter('error_description');
+
                 if (accessToken) {
+                    console.log("Access token found:", accessToken);
                     localStorage.setItem('resetToken', accessToken);
                     document.getElementById('resetForm').style.display = 'block';
+                } else if (error) {
+                    console.log("Error found:", error, "Description:", errorDescription);
+                    showError(`Error: ${error}. ${errorDescription}`);
                 } else {
+                    console.log("No access token or error found in URL");
                     showError('No access token found. Please request a new password reset link.');
                 }
             }
