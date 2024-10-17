@@ -13,59 +13,62 @@
         <button type="submit">Reset Password</button>
     </form>
     <div id="debug"></div>
-
     <script>
-        const SUPABASE_URL = 'https://nlkwvxqggvlmjbeympzi.supabase.co'
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sa3d2eHFnZ3ZsbWpiZXltcHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NjAwOTksImV4cCI6MjA0MjQzNjA5OX0.nbtya7nRxzHtgTnIek3dn21gnhnuXNIfTl-fF7xKUY0'
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-
-        function debugLog(message) {
-            console.log(message);
-            const debugElement = document.getElementById('debug');
-            debugElement.innerHTML += `<p>${message}</p>`;
-        }
-
-        function getURLParameter(name) {
-            const urlParams = new URLSearchParams(window.location.hash.slice(1));
-            return urlParams.get(name);
-        }
-
-        async function resetPassword(event) {
-            event.preventDefault();
-            debugLog('Reset password function called');
+        document.addEventListener('DOMContentLoaded', function() {
+            const SUPABASE_URL = 'https://nlkwvxqggvlmjbeympzi.supabase.co'
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sa3d2eHFnZ3ZsbWpiZXltcHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NjAwOTksImV4cCI6MjA0MjQzNjA5OX0.nbtya7nRxzHtgTnIek3dn21gnhnuXNIfTl-fF7xKUY0'
             
-            const newPassword = document.getElementById('newPassword').value;
-            const accessToken = getURLParameter('access_token');
+            const { createClient } = supabase;
+            const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            debugLog(`Access token: ${accessToken ? 'Found' : 'Not found'}`);
-
-            if (!accessToken) {
-                debugLog('No access token found. Please request a new password reset link.');
-                return;
+            function debugLog(message) {
+                console.log(message);
+                const debugElement = document.getElementById('debug');
+                debugElement.innerHTML += `<p>${message}</p>`;
             }
 
-            try {
-                debugLog('Attempting to update user password');
-                const { data, error } = await supabase.auth.updateUser(
-                    { password: newPassword },
-                    { accessToken: accessToken }
-                );
-                if (error) {
-                    console.error("Error resetting password:", error);
-                    debugLog(`Error resetting password: ${error.message}`);
-                } else {
-                    console.log("Password reset successful", data);
-                    debugLog('Password reset successful');
+            function getURLParameter(name) {
+                const urlParams = new URLSearchParams(window.location.hash.slice(1));
+                return urlParams.get(name);
+            }
+
+            async function resetPassword(event) {
+                event.preventDefault();
+                debugLog('Reset password function called');
+                
+                const newPassword = document.getElementById('newPassword').value;
+                const accessToken = getURLParameter('access_token');
+                debugLog(`Access token: ${accessToken ? 'Found' : 'Not found'}`);
+
+                if (!accessToken) {
+                    debugLog('No access token found. Please request a new password reset link.');
+                    return;
                 }
-            } catch (error) {
-                console.error("Exception during password reset:", error);
-                debugLog(`Exception during password reset: ${error.message}`);
-            }
-        }
 
-        document.getElementById('resetForm').addEventListener('submit', resetPassword);
-        debugLog('Page loaded and script executed');
+                try {
+                    debugLog('Attempting to update user password');
+                    const { data, error } = await supabaseClient.auth.updateUser(
+                        { password: newPassword },
+                        { accessToken: accessToken }
+                    );
+
+                    if (error) {
+                        console.error("Error resetting password:", error);
+                        debugLog(`Error resetting password: ${error.message}`);
+                    } else {
+                        console.log("Password reset successful", data);
+                        debugLog('Password reset successful. Please return to the app and sign in with your new password.');
+                        // You might want to redirect the user or show a success message here
+                    }
+                } catch (error) {
+                    console.error("Exception during password reset:", error);
+                    debugLog(`Exception during password reset: ${error.message}`);
+                }
+            }
+
+            document.getElementById('resetForm').addEventListener('submit', resetPassword);
+            debugLog('Page loaded and script executed');
+        });
     </script>
 </body>
 </html>
