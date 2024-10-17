@@ -10,11 +10,25 @@
         const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sa3d2eHFnZ3ZsbWpiZXltcHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NjAwOTksImV4cCI6MjA0MjQzNjA5OX0.nbtya7nRxzHtgTnIek3dn21gnhnuXNIfTl-fF7xKUY0
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+        function getURLParameter(name) {
+            return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+        }
+
         async function resetPassword() {
             const newPassword = document.getElementById('newPassword').value;
+            const token = getURLParameter('token'); // Get the token from the URL
+
+            if (!token) {
+                alert('No reset token found. Please request a new password reset link.');
+                return;
+            }
+
             console.log("Attempting to reset password...");
             try {
-                const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+                const { data, error } = await supabase.auth.updateUser(
+                    { password: newPassword },
+                    { accessToken: token } // Use the token here
+                );
                 if (error) {
                     console.error("Error resetting password:", error);
                     alert('Error resetting password: ' + error.message);
