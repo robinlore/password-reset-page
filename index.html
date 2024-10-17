@@ -5,16 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Your Password</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Reset Your Password</h1>
+    <form id="resetForm">
+        <input type="password" id="newPassword" placeholder="Enter new password" required>
+        <button type="submit">Reset Password</button>
+    </form>
+
     <script>
         const SUPABASE_URL = https://nlkwvxqggvlmjbeympzi.supabase.co
         const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sa3d2eHFnZ3ZsbWpiZXltcHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NjAwOTksImV4cCI6MjA0MjQzNjA5OX0.nbtya7nRxzHtgTnIek3dn21gnhnuXNIfTl-fF7xKUY0
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
         function getURLParameter(name) {
-            return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+            const urlParams = new URLSearchParams(window.location.hash.slice(1));
+            return urlParams.get(name);
         }
 
-        async function resetPassword() {
+        async function resetPassword(event) {
+            event.preventDefault();
             const newPassword = document.getElementById('newPassword').value;
             const accessToken = getURLParameter('access_token');
 
@@ -23,7 +33,6 @@
                 return;
             }
 
-            console.log("Attempting to reset password...");
             try {
                 const { data, error } = await supabase.auth.updateUser(
                     { password: newPassword },
@@ -41,13 +50,8 @@
                 alert('An error occurred during password reset');
             }
         }
+
+        document.getElementById('resetForm').addEventListener('submit', resetPassword);
     </script>
-</head>
-<body>
-    <h1>Reset Your Password</h1>
-    <form onsubmit="event.preventDefault(); resetPassword();">
-        <input type="password" id="newPassword" placeholder="Enter new password" required>
-        <button type="submit">Reset Password</button>
-    </form>
 </body>
 </html>
