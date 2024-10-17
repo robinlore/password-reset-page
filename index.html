@@ -32,10 +32,22 @@
                 return urlParams.get(name);
             }
 
+            function parseURL() {
+                debugLog(`Full URL: ${window.location.href}`);
+                debugLog(`URL Hash: ${window.location.hash}`);
+                
+                const urlParams = new URLSearchParams(window.location.hash.slice(1));
+                urlParams.forEach((value, key) => {
+                    debugLog(`Parameter: ${key} = ${value}`);
+                });
+            }
+
             async function resetPassword(event) {
                 event.preventDefault();
                 debugLog('Reset password function called');
                 
+                parseURL();
+
                 const newPassword = document.getElementById('newPassword').value;
                 const accessToken = getURLParameter('access_token');
                 debugLog(`Access token: ${accessToken ? 'Found' : 'Not found'}`);
@@ -68,6 +80,7 @@
 
             document.getElementById('resetForm').addEventListener('submit', resetPassword);
             debugLog('Page loaded and script executed');
+            parseURL(); // Parse URL on page load
         });
     </script>
 </body>
