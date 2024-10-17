@@ -8,7 +8,7 @@
 </head>
 <body>
     <h1>Reset Your Password</h1>
-    <form id="resetForm">
+    <form id="resetForm" style="display: none;">
         <input type="password" id="newPassword" placeholder="Enter new password" required>
         <button type="submit">Reset Password</button>
     </form>
@@ -29,28 +29,33 @@
 
             function getURLParameter(name) {
                 const urlParams = new URLSearchParams(window.location.search);
-                return urlParams.get(name);
+                return urlParams.get(name) || new URLSearchParams(window.location.hash.slice(1)).get(name);
             }
 
             function parseURL() {
                 debugLog(`Full URL: ${window.location.href}`);
                 debugLog(`URL Search: ${window.location.search}`);
+                debugLog(`URL Hash: ${window.location.hash}`);
                 
-                const urlParams = new URLSearchParams(window.location.search);
-                urlParams.forEach((value, key) => {
-                    debugLog(`Parameter: ${key} = ${value}`);
+                const searchParams = new URLSearchParams(window.location.search);
+                const hashParams = new URLSearchParams(window.location.hash.slice(1));
+                
+                searchParams.forEach((value, key) => {
+                    debugLog(`Search Parameter: ${key} = ${value}`);
+                });
+                hashParams.forEach((value, key) => {
+                    debugLog(`Hash Parameter: ${key} = ${value}`);
                 });
             }
 
-            async function handlePasswordReset() {
-                const token = getURLParameter('token');
-                const type = getURLParameter('type');
-
-                if (token && type === 'recovery') {
-                    debugLog('Token found in URL. Ready for password reset.');
+            function handleRedirect() {
+                const accessToken = getURLParameter('access_token');
+                if (accessToken) {
+                    localStorage.setItem('resetToken', accessToken);
+                    debugLog('Access token received and stored');
                     document.getElementById('resetForm').style.display = 'block';
                 } else {
-                    debugLog('No valid token found. Cannot reset password.');
+                    debugLog('No access token found in URL');
                     document.getElementById('resetForm').style.display = 'none';
                 }
             }
@@ -60,7 +65,7 @@
                 debugLog('Reset password function called');
                 
                 const newPassword = document.getElementById('newPassword').value;
-                const token = getURLParameter('token');
+                const token = localStorage.getItem('resetToken');
 
                 if (!token) {
                     debugLog('No token found. Please request a new password reset link.');
@@ -80,6 +85,7 @@
                     } else {
                         console.log("Password reset successful", data);
                         debugLog('Password reset successful. Please return to the app and sign in with your new password.');
+                        localStorage.removeItem('resetToken'); // Clear the token after use
                     }
                 } catch (error) {
                     console.error("Exception during password reset:", error);
@@ -90,7 +96,7 @@
             document.getElementById('resetForm').addEventListener('submit', resetPassword);
             debugLog('Page loaded and script executed');
             parseURL();
-            handlePasswordReset();
+            handleRedirect();
         });
     </script>
 </body>
