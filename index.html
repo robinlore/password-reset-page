@@ -13,7 +13,7 @@
 <body>
     <h1>Reset Your Password</h1>
     <form id="resetForm" style="display: none;">
-        <input type="password" id="newPassword" placeholder="Enter new password (min 6 characters)" required>
+        <input type="password" id="newPassword" placeholder="Enter new password" required>
         <button type="submit">Reset Password</button>
     </form>
     <div id="message"></div>
@@ -37,25 +37,38 @@
                     localStorage.setItem('resetToken', accessToken);
                     document.getElementById('resetForm').style.display = 'block';
                 } else {
-                    document.getElementById('error').textContent = 'No access token found. Please request a new password reset link.';
-                    document.getElementById('error').style.display = 'block';
+                    showError('No access token found. Please request a new password reset link.');
                 }
+            }
+
+            function showError(message) {
+                document.getElementById('error').textContent = message;
+                document.getElementById('error').style.display = 'block';
+            }
+
+            function clearError() {
+                document.getElementById('error').textContent = '';
+                document.getElementById('error').style.display = 'none';
+            }
+
+            function showMessage(message) {
+                document.getElementById('message').textContent = message;
+                document.getElementById('message').style.display = 'block';
             }
 
             async function resetPassword(event) {
                 event.preventDefault();
+                clearError();
                 const newPassword = document.getElementById('newPassword').value;
                 const token = localStorage.getItem('resetToken');
 
                 if (newPassword.length < 6) {
-                    document.getElementById('error').textContent = 'Password should be at least 6 characters.';
-                    document.getElementById('error').style.display = 'block';
+                    showError('Password should be at least 6 characters.');
                     return;
                 }
 
                 if (!token) {
-                    document.getElementById('error').textContent = 'No token found. Please request a new password reset link.';
-                    document.getElementById('error').style.display = 'block';
+                    showError('No token found. Please request a new password reset link.');
                     return;
                 }
 
@@ -66,17 +79,14 @@
                     );
 
                     if (error) {
-                        document.getElementById('error').textContent = `Error resetting password: ${error.message}`;
-                        document.getElementById('error').style.display = 'block';
+                        showError(`Error resetting password: ${error.message}`);
                     } else {
-                        document.getElementById('message').textContent = 'Password reset successful. Please return to the app and sign in with your new password.';
-                        document.getElementById('message').style.display = 'block';
+                        showMessage('Password reset successful. Please return to the app and sign in with your new password.');
                         document.getElementById('resetForm').style.display = 'none';
                         localStorage.removeItem('resetToken');
                     }
                 } catch (error) {
-                    document.getElementById('error').textContent = `Exception during password reset: ${error.message}`;
-                    document.getElementById('error').style.display = 'block';
+                    showError(`Exception during password reset: ${error.message}`);
                 }
             }
 
