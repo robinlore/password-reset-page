@@ -42,28 +42,48 @@
                 });
             }
 
+            function checkForErrors() {
+                const urlParams = new URLSearchParams(window.location.hash.slice(1));
+                const error = urlParams.get('error');
+                const errorDescription = urlParams.get('error_description');
+                if (error) {
+                    debugLog(`Error: ${error}`);
+                    debugLog(`Error Description: ${errorDescription}`);
+                    document.getElementById('debug').innerHTML += `<p style="color: red;">Error: ${errorDescription}</p>`;
+                }
+            }
+
+            async function handleRedirect() {
+                const hashParams = new URLSearchParams(window.location.hash.slice(1));
+                const accessToken = hashParams.get('access_token');
+                if (accessToken) {
+                    debugLog('Access token found in URL');
+                    // Here you can automatically attempt to reset the password
+                    // or show a form for the user to enter their new password
+                } else {
+                    debugLog('No access token found in URL');
+                    checkForErrors();
+                }
+            }
+
             async function resetPassword(event) {
                 event.preventDefault();
                 debugLog('Reset password function called');
                 
                 parseURL();
-
                 const newPassword = document.getElementById('newPassword').value;
                 const accessToken = getURLParameter('access_token');
                 debugLog(`Access token: ${accessToken ? 'Found' : 'Not found'}`);
-
                 if (!accessToken) {
                     debugLog('No access token found. Please request a new password reset link.');
                     return;
                 }
-
                 try {
                     debugLog('Attempting to update user password');
                     const { data, error } = await supabaseClient.auth.updateUser(
                         { password: newPassword },
                         { accessToken: accessToken }
                     );
-
                     if (error) {
                         console.error("Error resetting password:", error);
                         debugLog(`Error resetting password: ${error.message}`);
@@ -81,6 +101,7 @@
             document.getElementById('resetForm').addEventListener('submit', resetPassword);
             debugLog('Page loaded and script executed');
             parseURL(); // Parse URL on page load
+            handleRedirect(); // Handle redirect and check for errors
         });
     </script>
 </body>
