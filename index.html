@@ -81,9 +81,13 @@
                     if (error) {
                         showError(`Error resetting password: ${error.message}`);
                     } else {
-                        showMessage('Password reset successful. Please return to the app and sign in with your new password.');
+                        showMessage('Password reset successful. Redirecting to app...');
                         document.getElementById('resetForm').style.display = 'none';
                         localStorage.removeItem('resetToken');
+                        // Redirect to your app
+                        setTimeout(() => {
+                            window.location.href = 'co.precisionpill://passwordReset?success=true';
+                        }, 2000); // Wait 2 seconds before redirecting
                     }
                 } catch (error) {
                     showError(`Exception during password reset: ${error.message}`);
