@@ -38,20 +38,14 @@
 
                 const code = getURLParameter('code');
                 const accessToken = getURLParameter('access_token');
+                const type = getURLParameter('type');
                 const error = getURLParameter('error');
                 const errorDescription = getURLParameter('error_description');
 
-                if (code) {
-                    console.log("Code found:", code);
-                    try {
-                        const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code);
-                        if (error) throw error;
-                        localStorage.setItem('resetToken', data.session.access_token);
-                        document.getElementById('resetForm').style.display = 'block';
-                    } catch (error) {
-                        console.error("Error exchanging code for session:", error);
-                        showError(`Error: ${error.message}`);
-                    }
+                if (code && type === 'recovery') {
+                    console.log("Recovery code found:", code);
+                    document.getElementById('resetForm').style.display = 'block';
+                    localStorage.setItem('resetCode', code);
                 } else if (accessToken) {
                     console.log("Access token found:", accessToken);
                     localStorage.setItem('resetToken', accessToken);
@@ -60,8 +54,8 @@
                     console.log("Error found:", error, "Description:", errorDescription);
                     showError(`Error: ${error}. ${errorDescription}`);
                 } else {
-                    console.log("No code, access token, or error found in URL");
-                    showError('No code or access token found. Please request a new password reset link.');
+                    console.log("No valid parameters found in URL");
+                    showError('Invalid or expired link. Please request a new password reset link.');
                 }
             }
 
@@ -85,36 +79,48 @@
                 clearError();
                 const newPassword = document.getElementById('newPassword').value;
                 const token = localStorage.getItem('resetToken');
+                const code = localStorage.getItem('resetCode');
 
                 if (newPassword.length < 6) {
                     showError('Password should be at least 6 characters.');
                     return;
                 }
 
-                if (!token) {
-                    showError('No token found. Please request a new password reset link.');
+                if (!token && !code) {
+                    showError('No token or code found. Please request a new password reset link.');
                     return;
                 }
 
                 try {
-                    const { data, error } = await supabaseClient.auth.updateUser(
-                        { password: newPassword },
-                        { accessToken: token }
-                    );
-
-                    if (error) {
-                        showError(`Error resetting password: ${error.message}`);
+                    let result;
+                    if (code) {
+                        result = await supabaseClient.auth.verifyOtp({
+                            token: code,
+                            type: 'recovery',
+                            newPassword: newPassword
+                        });
                     } else {
-                        showMessage('Password reset successful. Redirecting to app...');
-                        document.getElementById('resetForm').style.display = 'none';
-                        localStorage.removeItem('resetToken');
-                        // Redirect to your app
-                        setTimeout(() => {
-                            window.location.href = 'co.precisionpill://passwordReset?success=true';
-                        }, 2000); // Wait 2 seconds before redirecting
+                        result = await supabaseClient.auth.updateUser(
+                            { password: newPassword },
+                            { accessToken: token }
+                        );
                     }
+
+                    if (result.error) {
+                        throw result.error;
+                    }
+
+                    showMessage('Password reset successful. Redirecting to app...');
+                    document.getElementById('resetForm').style.display = 'none';
+                    localStorage.removeItem('resetToken');
+                    localStorage.removeItem('resetCode');
+                    
+                    // Redirect to your app
+                    setTimeout(() => {
+                        window.location.href = 'co.precisionpill://passwordReset?success=true';
+                    }, 2000); // Wait 2 seconds before redirecting
                 } catch (error) {
-                    showError(`Exception during password reset: ${error.message}`);
+                    showError(`Error resetting password: ${error.message}`);
                 }
             }
 
