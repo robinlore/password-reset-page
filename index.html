@@ -66,19 +66,17 @@
                 console.log("Search params:", window.location.search);
                 console.log("Hash:", window.location.hash);
 
-                const code = getURLParameter('code');
                 const accessToken = getURLParameter('access_token');
-                const type = getURLParameter('type');
+                const refreshToken = getURLParameter('refresh_token');
                 const error = getURLParameter('error');
                 const errorDescription = getURLParameter('error_description');
 
-                if (code) {
-                    console.log("Code found:", code);
-                    localStorage.setItem('resetCode', code);
-                    document.getElementById('resetForm').style.display = 'block';
-                } else if (accessToken) {
+                if (accessToken) {
                     console.log("Access token found:", accessToken);
-                    localStorage.setItem('resetToken', accessToken);
+                    localStorage.setItem('accessToken', accessToken);
+                    if (refreshToken) {
+                        localStorage.setItem('refreshToken', refreshToken);
+                    }
                     document.getElementById('resetForm').style.display = 'block';
                 } else if (error) {
                     console.log("Error found:", error, "Description:", errorDescription);
@@ -100,30 +98,30 @@
             async function resetPassword(event) {
                 event.preventDefault();
                 const newPassword = document.getElementById('newPassword').value;
-                const code = localStorage.getItem('resetCode');
+                const accessToken = localStorage.getItem('accessToken');
 
                 if (newPassword.length < 6) {
                     showError('Password should be at least 6 characters.');
                     return;
                 }
 
-                if (!code) {
-                    showError('No reset code found. Please request a new password reset link.');
+                if (!accessToken) {
+                    showError('No access token found. Please request a new password reset link.');
                     return;
                 }
 
                 try {
-                    const { data, error } = await supabaseClient.auth.verifyOtp({
-                        token: code,
-                        type: 'recovery',
-                        new_password: newPassword
-                    });
+                    const { data, error } = await supabaseClient.auth.updateUser(
+                        { password: newPassword },
+                        { accessToken: accessToken }
+                    );
 
                     if (error) throw error;
 
                     showMessage('Password reset successful. Redirecting to app...');
                     document.getElementById('resetForm').style.display = 'none';
-                    localStorage.removeItem('resetCode');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
                     
                     // Redirect to your app
                     setTimeout(() => {
