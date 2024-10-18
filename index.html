@@ -31,34 +31,39 @@
                 return urlParams.get(name) || new URLSearchParams(window.location.hash.slice(1)).get(name);
             }
 
-async function handleRedirect() {
-    console.log("Full URL:", window.location.href);
-    console.log("Search params:", window.location.search);
-    console.log("Hash:", window.location.hash);
+            async function handleRedirect() {
+                console.log("Full URL:", window.location.href);
+                console.log("Search params:", window.location.search);
+                console.log("Hash:", window.location.hash);
 
-    const code = getURLParameter('code');
-    const error = getURLParameter('error');
-    const errorDescription = getURLParameter('error_description');
+                const code = getURLParameter('code');
+                const accessToken = getURLParameter('access_token');
+                const error = getURLParameter('error');
+                const errorDescription = getURLParameter('error_description');
 
-    if (code) {
-        console.log("Code found:", code);
-        try {
-            const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code);
-            if (error) throw error;
-            localStorage.setItem('resetToken', data.session.access_token);
-            document.getElementById('resetForm').style.display = 'block';
-        } catch (error) {
-            console.error("Error exchanging code for session:", error);
-            showError(`Error: ${error.message}`);
-        }
-    } else if (error) {
-        console.log("Error found:", error, "Description:", errorDescription);
-        showError(`Error: ${error}. ${errorDescription}`);
-    } else {
-        console.log("No code or error found in URL");
-        showError('No code found. Please request a new password reset link.');
-    }
-}
+                if (code) {
+                    console.log("Code found:", code);
+                    try {
+                        const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code);
+                        if (error) throw error;
+                        localStorage.setItem('resetToken', data.session.access_token);
+                        document.getElementById('resetForm').style.display = 'block';
+                    } catch (error) {
+                        console.error("Error exchanging code for session:", error);
+                        showError(`Error: ${error.message}`);
+                    }
+                } else if (accessToken) {
+                    console.log("Access token found:", accessToken);
+                    localStorage.setItem('resetToken', accessToken);
+                    document.getElementById('resetForm').style.display = 'block';
+                } else if (error) {
+                    console.log("Error found:", error, "Description:", errorDescription);
+                    showError(`Error: ${error}. ${errorDescription}`);
+                } else {
+                    console.log("No code, access token, or error found in URL");
+                    showError('No code or access token found. Please request a new password reset link.');
+                }
+            }
 
             function showError(message) {
                 document.getElementById('error').textContent = message;
@@ -75,42 +80,43 @@ async function handleRedirect() {
                 document.getElementById('message').style.display = 'block';
             }
 
-async function resetPassword(event) {
-    event.preventDefault();
-    clearError();
-    const newPassword = document.getElementById('newPassword').value;
-    const token = localStorage.getItem('resetToken');
+            async function resetPassword(event) {
+                event.preventDefault();
+                clearError();
+                const newPassword = document.getElementById('newPassword').value;
+                const token = localStorage.getItem('resetToken');
 
-    if (newPassword.length < 6) {
-        showError('Password should be at least 6 characters.');
-        return;
-    }
+                if (newPassword.length < 6) {
+                    showError('Password should be at least 6 characters.');
+                    return;
+                }
 
-    if (!token) {
-        showError('No token found. Please request a new password reset link.');
-        return;
-    }
+                if (!token) {
+                    showError('No token found. Please request a new password reset link.');
+                    return;
+                }
 
-    try {
-        const { data, error } = await supabaseClient.auth.updateUser(
-            { password: newPassword }
-        );
+                try {
+                    const { data, error } = await supabaseClient.auth.updateUser(
+                        { password: newPassword },
+                        { accessToken: token }
+                    );
 
-        if (error) {
-            showError(`Error resetting password: ${error.message}`);
-        } else {
-            showMessage('Password reset successful. Redirecting to app...');
-            document.getElementById('resetForm').style.display = 'none';
-            localStorage.removeItem('resetToken');
-            // Redirect to your app
-            setTimeout(() => {
-                window.location.href = 'co.precisionpill://passwordReset?success=true';
-            }, 2000); // Wait 2 seconds before redirecting
-        }
-    } catch (error) {
-        showError(`Exception during password reset: ${error.message}`);
-    }
-}
+                    if (error) {
+                        showError(`Error resetting password: ${error.message}`);
+                    } else {
+                        showMessage('Password reset successful. Redirecting to app...');
+                        document.getElementById('resetForm').style.display = 'none';
+                        localStorage.removeItem('resetToken');
+                        // Redirect to your app
+                        setTimeout(() => {
+                            window.location.href = 'co.precisionpill://passwordReset?success=true';
+                        }, 2000); // Wait 2 seconds before redirecting
+                    }
+                } catch (error) {
+                    showError(`Exception during password reset: ${error.message}`);
+                }
+            }
 
             document.getElementById('resetForm').addEventListener('submit', resetPassword);
             handleRedirect();
