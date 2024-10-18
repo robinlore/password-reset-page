@@ -75,43 +75,42 @@ async function handleRedirect() {
                 document.getElementById('message').style.display = 'block';
             }
 
-            async function resetPassword(event) {
-                event.preventDefault();
-                clearError();
-                const newPassword = document.getElementById('newPassword').value;
-                const token = localStorage.getItem('resetToken');
+async function resetPassword(event) {
+    event.preventDefault();
+    clearError();
+    const newPassword = document.getElementById('newPassword').value;
+    const token = localStorage.getItem('resetToken');
 
-                if (newPassword.length < 6) {
-                    showError('Password should be at least 6 characters.');
-                    return;
-                }
+    if (newPassword.length < 6) {
+        showError('Password should be at least 6 characters.');
+        return;
+    }
 
-                if (!token) {
-                    showError('No token found. Please request a new password reset link.');
-                    return;
-                }
+    if (!token) {
+        showError('No token found. Please request a new password reset link.');
+        return;
+    }
 
-                try {
-                    const { data, error } = await supabaseClient.auth.updateUser(
-                        { password: newPassword },
-                        { accessToken: token }
-                    );
+    try {
+        const { data, error } = await supabaseClient.auth.updateUser(
+            { password: newPassword }
+        );
 
-                    if (error) {
-                        showError(`Error resetting password: ${error.message}`);
-                    } else {
-                        showMessage('Password reset successful. Redirecting to app...');
-                        document.getElementById('resetForm').style.display = 'none';
-                        localStorage.removeItem('resetToken');
-                        // Redirect to your app
-                        setTimeout(() => {
-                            window.location.href = 'co.precisionpill://passwordReset?success=true';
-                        }, 2000); // Wait 2 seconds before redirecting
-                    }
-                } catch (error) {
-                    showError(`Exception during password reset: ${error.message}`);
-                }
-            }
+        if (error) {
+            showError(`Error resetting password: ${error.message}`);
+        } else {
+            showMessage('Password reset successful. Redirecting to app...');
+            document.getElementById('resetForm').style.display = 'none';
+            localStorage.removeItem('resetToken');
+            // Redirect to your app
+            setTimeout(() => {
+                window.location.href = 'co.precisionpill://passwordReset?success=true';
+            }, 2000); // Wait 2 seconds before redirecting
+        }
+    } catch (error) {
+        showError(`Exception during password reset: ${error.message}`);
+    }
+}
 
             document.getElementById('resetForm').addEventListener('submit', resetPassword);
             handleRedirect();
