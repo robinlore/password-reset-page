@@ -6,44 +6,12 @@
     <title>Reset Your Password</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        #resetForm {
-            margin-top: 20px;
-            display: none;
-        }
-        input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            cursor: pointer;
-        }
-        #message {
-            color: green;
-            margin-top: 10px;
-        }
-        #error {
-            color: red;
-            margin-top: 10px;
-        }
+        /* Your existing styles */
     </style>
 </head>
 <body>
     <h1>Reset Your Password</h1>
-    <form id="resetForm">
+    <form id="resetForm" style="display:none;">
         <input type="password" id="newPassword" placeholder="Enter new password" required>
         <button type="submit">Reset Password</button>
     </form>
@@ -52,7 +20,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const SUPABASE_URL = 'https://nlkwvxqggvlmjbeympzi.supabase.co'
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sa3d2eHFnZ3ZsbWpiZXltcHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NjAwOTksImV4cCI6MjA0MjQzNjA5OX0.nbtya7nRxzHtgTnIek3dn21gnhnuXNIfTl-fF7xKUY0'
+            const SUPABASE_ANON_KEY = 'your-supabase-anon-key'
             
             const { createClient } = supabase;
             const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -69,16 +37,17 @@
             }
 
             async function handleRedirect() {
-                const accessToken = getURLParameter('access_token');
+                const token = getURLParameter('token');
                 const type = getURLParameter('type');
-                const error = getURLParameter('error');
-                const errorDescription = getURLParameter('error_description');
+                const redirectTo = getURLParameter('redirect_to');
 
-                if (accessToken && type === 'recovery') {
+                if (token && type === 'recovery') {
                     document.getElementById('resetForm').style.display = 'block';
-                } else if (error) {
-                    showError(`Error: ${error}. ${errorDescription}`);
-                    setTimeout(() => redirectToApp({ error: errorDescription }), 3000);
+                    // Store the token for later use
+                    localStorage.setItem('resetToken', token);
+                } else if (redirectTo) {
+                    // If there's a redirect_to parameter, use it
+                    window.location.href = redirectTo;
                 } else {
                     showError('Invalid or expired link. Please request a new password reset link.');
                     setTimeout(() => redirectToApp({ error: 'Invalid or expired link' }), 3000);
@@ -96,31 +65,32 @@
             async function resetPassword(event) {
                 event.preventDefault();
                 const newPassword = document.getElementById('newPassword').value;
-                const accessToken = getURLParameter('access_token');
+                const token = localStorage.getItem('resetToken');
 
                 if (newPassword.length < 6) {
                     showError('Password should be at least 6 characters.');
                     return;
                 }
 
-                if (!accessToken) {
-                    showError('No access token found. Please request a new password reset link.');
-                    setTimeout(() => redirectToApp({ error: 'No access token' }), 3000);
+                if (!token) {
+                    showError('No reset token found. Please request a new password reset link.');
+                    setTimeout(() => redirectToApp({ error: 'No reset token' }), 3000);
                     return;
                 }
 
                 try {
-                    const { data, error } = await supabaseClient.auth.updateUser(
+                    const { error } = await supabaseClient.auth.updateUser(
                         { password: newPassword },
-                        { accessToken: accessToken }
-                    );
+                        { accessToken: token }
+                    )
 
                     if (error) throw error;
 
                     showMessage('Password reset successful. Redirecting to app...');
                     document.getElementById('resetForm').style.display = 'none';
+                    localStorage.removeItem('resetToken');
                     
-                    setTimeout(() => redirectToApp({ success: 'true', accessToken: accessToken }), 2000);
+                    setTimeout(() => redirectToApp({ success: 'true' }), 2000);
                 } catch (error) {
                     showError(`Error resetting password: ${error.message}`);
                     setTimeout(() => redirectToApp({ error: error.message }), 3000);
