@@ -6,108 +6,105 @@
     <title>Reset Your Password</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* Your existing styles */
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        h1 { color: #333; }
+        #resetForm { margin-top: 20px; }
+        input[type="password"] { width: 100%; padding: 10px; margin-bottom: 10px; }
+        button { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; cursor: pointer; }
+        #message { color: green; margin-top: 10px; }
+        #error { color: red; margin-top: 10px; }
     </style>
 </head>
 <body>
     <h1>Reset Your Password</h1>
-    <form id="resetForm" style="display:none;">
+    <form id="resetForm">
         <input type="password" id="newPassword" placeholder="Enter new password" required>
         <button type="submit">Reset Password</button>
     </form>
     <div id="message"></div>
     <div id="error"></div>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const SUPABASE_URL = 'https://nlkwvxqggvlmjbeympzi.supabase.co'
-            const SUPABASE_ANON_KEY = 'your-supabase-anon-key'
-            
-            const { createClient } = supabase;
-            const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const SUPABASE_URL = 'https://nlkwvxqggvlmjbeympzi.supabase.co'
+        const SUPABASE_ANON_KEY = 'your-supabase-anon-key'
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-            function getURLParameter(name) {
-                const urlParams = new URLSearchParams(window.location.search);
-                return urlParams.get(name) || new URLSearchParams(window.location.hash.slice(1)).get(name);
+        function getURLParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name) || new URLSearchParams(window.location.hash.slice(1)).get(name);
+        }
+
+        async function handleRedirect() {
+            const accessToken = getURLParameter('access_token');
+            const code = getURLParameter('code');
+            const error = getURLParameter('error');
+            const errorDescription = getURLParameter('error_description');
+
+            if (error) {
+                showError(`Error: ${error}. ${errorDescription}`);
+                return;
             }
 
-            function redirectToApp(params) {
-                const baseUrl = 'co.precisionpill://reset-password';
-                const queryString = new URLSearchParams(params).toString();
-                window.location.href = `${baseUrl}?${queryString}`;
-            }
-
-            async function handleRedirect() {
-                const accessToken = getURLParameter('access_token');
-                const token = getURLParameter('token');
-                const type = getURLParameter('type');
-
-                if (accessToken) {
-                    // Handle Supabase direct link
-                    document.getElementById('resetForm').style.display = 'block';
-                    localStorage.setItem('resetToken', accessToken);
-                } else if (token && type === 'recovery') {
-                    // Handle app-initiated reset
-                    try {
-                        const { data, error } = await supabaseClient.auth.verifyOtp({ token, type });
-                        if (error) throw error;
-                        document.getElementById('resetForm').style.display = 'block';
-                        localStorage.setItem('resetToken', data.session.access_token);
-                    } catch (error) {
-                        showError(`Error verifying token: ${error.message}`);
-                        setTimeout(() => redirectToApp({ error: error.message }), 3000);
-                    }
-                } else {
-                    showError('Invalid or expired link. Please request a new password reset link.');
-                    setTimeout(() => redirectToApp({ error: 'Invalid or expired link' }), 3000);
-                }
-            }
-
-            function showError(message) {
-                document.getElementById('error').textContent = message;
-            }
-
-            function showMessage(message) {
-                document.getElementById('message').textContent = message;
-            }
-
-            async function resetPassword(event) {
-                event.preventDefault();
-                const newPassword = document.getElementById('newPassword').value;
-                const token = localStorage.getItem('resetToken');
-
-                if (newPassword.length < 6) {
-                    showError('Password should be at least 6 characters.');
-                    return;
-                }
-
-                if (!token) {
-                    showError('No reset token found. Please request a new password reset link.');
-                    setTimeout(() => redirectToApp({ error: 'No reset token' }), 3000);
-                    return;
-                }
-
+            if (accessToken) {
+                // Handle Supabase direct link
+                localStorage.setItem('resetToken', accessToken);
+            } else if (code) {
                 try {
-                    const { error } = await supabaseClient.auth.updateUser(
-                        { password: newPassword },
-                        { accessToken: token }
-                    )
-
+                    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
                     if (error) throw error;
-
-                    showMessage('Password reset successful. Redirecting to app...');
-                    document.getElementById('resetForm').style.display = 'none';
-                    localStorage.removeItem('resetToken');
-                    
-                    setTimeout(() => redirectToApp({ success: 'true' }), 2000);
+                    localStorage.setItem('resetToken', data.session.access_token);
                 } catch (error) {
-                    showError(`Error resetting password: ${error.message}`);
-                    setTimeout(() => redirectToApp({ error: error.message }), 3000);
+                    showError(`Error verifying code: ${error.message}`);
+                    return;
                 }
+            } else {
+                showError('Invalid or expired link. Please request a new password reset link.');
+                return;
             }
 
-            document.getElementById('resetForm').addEventListener('submit', resetPassword);
-            handleRedirect();
-        });
+            document.getElementById('resetForm').style.display = 'block';
+        }
+
+        function showError(message) {
+            document.getElementById('error').textContent = message;
+        }
+
+        function showMessage(message) {
+            document.getElementById('message').textContent = message;
+        }
+
+        async function resetPassword(event) {
+            event.preventDefault();
+            const newPassword = document.getElementById('newPassword').value;
+            const token = localStorage.getItem('resetToken');
+
+            if (newPassword.length < 6) {
+                showError('Password should be at least 6 characters.');
+                return;
+            }
+
+            if (!token) {
+                showError('No reset token found. Please request a new password reset link.');
+                return;
+            }
+
+            try {
+                const { error } = await supabase.auth.updateUser(
+                    { password: newPassword },
+                    { accessToken: token }
+                )
+
+                if (error) throw error;
+
+                showMessage('Password reset successful. You can now close this page and return to the app.');
+                document.getElementById('resetForm').style.display = 'none';
+                localStorage.removeItem('resetToken');
+            } catch (error) {
+                showError(`Error resetting password: ${error.message}`);
+            }
+        }
+
+        document.getElementById('resetForm').addEventListener('submit', resetPassword);
+        handleRedirect();
     </script>
 </body>
 </html>
