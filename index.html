@@ -37,17 +37,25 @@
             }
 
             async function handleRedirect() {
+                const accessToken = getURLParameter('access_token');
                 const token = getURLParameter('token');
                 const type = getURLParameter('type');
-                const redirectTo = getURLParameter('redirect_to');
 
-                if (token && type === 'recovery') {
+                if (accessToken) {
+                    // Handle Supabase direct link
                     document.getElementById('resetForm').style.display = 'block';
-                    // Store the token for later use
-                    localStorage.setItem('resetToken', token);
-                } else if (redirectTo) {
-                    // If there's a redirect_to parameter, use it
-                    window.location.href = redirectTo;
+                    localStorage.setItem('resetToken', accessToken);
+                } else if (token && type === 'recovery') {
+                    // Handle app-initiated reset
+                    try {
+                        const { data, error } = await supabaseClient.auth.verifyOtp({ token, type });
+                        if (error) throw error;
+                        document.getElementById('resetForm').style.display = 'block';
+                        localStorage.setItem('resetToken', data.session.access_token);
+                    } catch (error) {
+                        showError(`Error verifying token: ${error.message}`);
+                        setTimeout(() => redirectToApp({ error: error.message }), 3000);
+                    }
                 } else {
                     showError('Invalid or expired link. Please request a new password reset link.');
                     setTimeout(() => redirectToApp({ error: 'Invalid or expired link' }), 3000);
