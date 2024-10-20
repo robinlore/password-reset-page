@@ -17,7 +17,7 @@
 </head>
 <body>
     <h1>Reset Your Password</h1>
-    <form id="resetForm">
+    <form id="resetForm" style="display:none;">
         <input type="password" id="newPassword" placeholder="Enter new password" required>
         <button type="submit">Reset Password</button>
     </form>
@@ -25,48 +25,32 @@
     <div id="error"></div>
     <script>
         const SUPABASE_URL = 'https://nlkwvxqggvlmjbeympzi.supabase.co'
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sa3d2eHFnZ3ZsbWpiZXltcHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NjAwOTksImV4cCI6MjA0MjQzNjA5OX0.nbtya7nRxzHtgTnIek3dn21gnhnuXNIfTl-fF7xKUY0'
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+        const SUPABASE_ANON_KEY = 'your-supabase-anon-key'
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
         function getURLParameter(name) {
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(name) || new URLSearchParams(window.location.hash.slice(1)).get(name);
+            return urlParams.get(name);
         }
 
         async function handleRedirect() {
-            const accessToken = getURLParameter('access_token');
-            const refreshToken = getURLParameter('refresh_token');
-            const code = getURLParameter('code');
-            const error = getURLParameter('error');
-            const errorDescription = getURLParameter('error_description');
+            const token = getURLParameter('token');
+            const type = getURLParameter('type');
 
-            if (error) {
-                showError(`Error: ${error}. ${errorDescription}`);
-                return;
-            }
-
-            if (accessToken) {
-                // Handle Supabase direct link
-                localStorage.setItem('resetToken', accessToken);
-                if (refreshToken) {
-                    localStorage.setItem('refreshToken', refreshToken);
-                }
-            } else if (code) {
-                try {
-                    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code)
-                    if (error) throw error;
-                    localStorage.setItem('resetToken', data.session.access_token);
-                    localStorage.setItem('refreshToken', data.session.refresh_token);
-                } catch (error) {
-                    showError(`Error verifying code: ${error.message}`);
-                    return;
-                }
-            } else {
+            if (!token || type !== 'recovery') {
                 showError('Invalid or expired link. Please request a new password reset link.');
                 return;
             }
 
-            document.getElementById('resetForm').style.display = 'block';
+            try {
+                const { data, error } = await supabase.auth.verifyOtp({ token, type });
+                if (error) throw error;
+
+                localStorage.setItem('resetToken', data.session.access_token);
+                document.getElementById('resetForm').style.display = 'block';
+            } catch (error) {
+                showError(`Error verifying token: ${error.message}`);
+            }
         }
 
         function showError(message) {
@@ -93,9 +77,8 @@
             }
 
             try {
-                const { data, error } = await supabaseClient.auth.updateUser(
-                    { password: newPassword },
-                    { accessToken: token }
+                const { data, error } = await supabase.auth.updateUser(
+                    { password: newPassword }
                 )
 
                 if (error) throw error;
@@ -103,7 +86,6 @@
                 showMessage('Password reset successful. You can now close this page and return to the app.');
                 document.getElementById('resetForm').style.display = 'none';
                 localStorage.removeItem('resetToken');
-                localStorage.removeItem('refreshToken');
             } catch (error) {
                 showError(`Error resetting password: ${error.message}`);
             }
