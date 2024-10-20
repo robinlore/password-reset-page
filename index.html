@@ -62,26 +62,26 @@
                 return urlParams.get(name) || new URLSearchParams(window.location.hash.slice(1)).get(name);
             }
 
-            async function handleRedirect() {
-                console.log("Full URL:", window.location.href);
-                console.log("Search params:", window.location.search);
-                console.log("Hash:", window.location.hash);
+            function redirectToApp(params) {
+                const baseUrl = 'co.precisionpill://reset-password';
+                const queryString = new URLSearchParams(params).toString();
+                window.location.href = `${baseUrl}?${queryString}`;
+            }
 
+            async function handleRedirect() {
                 const accessToken = getURLParameter('access_token');
                 const type = getURLParameter('type');
                 const error = getURLParameter('error');
                 const errorDescription = getURLParameter('error_description');
 
                 if (accessToken && type === 'recovery') {
-                    console.log("Access token found:", accessToken);
-                    localStorage.setItem('accessToken', accessToken);
                     document.getElementById('resetForm').style.display = 'block';
                 } else if (error) {
-                    console.log("Error found:", error, "Description:", errorDescription);
                     showError(`Error: ${error}. ${errorDescription}`);
+                    setTimeout(() => redirectToApp({ error: errorDescription }), 3000);
                 } else {
-                    console.log("No valid parameters found in URL");
                     showError('Invalid or expired link. Please request a new password reset link.');
+                    setTimeout(() => redirectToApp({ error: 'Invalid or expired link' }), 3000);
                 }
             }
 
@@ -96,7 +96,7 @@
             async function resetPassword(event) {
                 event.preventDefault();
                 const newPassword = document.getElementById('newPassword').value;
-                const accessToken = localStorage.getItem('accessToken');
+                const accessToken = getURLParameter('access_token');
 
                 if (newPassword.length < 6) {
                     showError('Password should be at least 6 characters.');
@@ -105,6 +105,7 @@
 
                 if (!accessToken) {
                     showError('No access token found. Please request a new password reset link.');
+                    setTimeout(() => redirectToApp({ error: 'No access token' }), 3000);
                     return;
                 }
 
@@ -118,14 +119,11 @@
 
                     showMessage('Password reset successful. Redirecting to app...');
                     document.getElementById('resetForm').style.display = 'none';
-                    localStorage.removeItem('accessToken');
                     
-                    // Redirect to your app
-                    setTimeout(() => {
-                        window.location.href = 'co.precisionpill://passwordReset?success=true';
-                    }, 2000); // Wait 2 seconds before redirecting
+                    setTimeout(() => redirectToApp({ success: 'true', accessToken: accessToken }), 2000);
                 } catch (error) {
                     showError(`Error resetting password: ${error.message}`);
+                    setTimeout(() => redirectToApp({ error: error.message }), 3000);
                 }
             }
 
