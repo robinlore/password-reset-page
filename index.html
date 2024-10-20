@@ -26,7 +26,7 @@
     <script>
         const SUPABASE_URL = 'https://nlkwvxqggvlmjbeympzi.supabase.co'
         const SUPABASE_ANON_KEY = 'your-supabase-anon-key'
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
         function getURLParameter(name) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -35,6 +35,7 @@
 
         async function handleRedirect() {
             const accessToken = getURLParameter('access_token');
+            const refreshToken = getURLParameter('refresh_token');
             const code = getURLParameter('code');
             const error = getURLParameter('error');
             const errorDescription = getURLParameter('error_description');
@@ -47,11 +48,15 @@
             if (accessToken) {
                 // Handle Supabase direct link
                 localStorage.setItem('resetToken', accessToken);
+                if (refreshToken) {
+                    localStorage.setItem('refreshToken', refreshToken);
+                }
             } else if (code) {
                 try {
-                    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+                    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code)
                     if (error) throw error;
                     localStorage.setItem('resetToken', data.session.access_token);
+                    localStorage.setItem('refreshToken', data.session.refresh_token);
                 } catch (error) {
                     showError(`Error verifying code: ${error.message}`);
                     return;
@@ -88,7 +93,7 @@
             }
 
             try {
-                const { data, error } = await supabase.auth.updateUser(
+                const { data, error } = await supabaseClient.auth.updateUser(
                     { password: newPassword },
                     { accessToken: token }
                 )
@@ -98,6 +103,7 @@
                 showMessage('Password reset successful. You can now close this page and return to the app.');
                 document.getElementById('resetForm').style.display = 'none';
                 localStorage.removeItem('resetToken');
+                localStorage.removeItem('refreshToken');
             } catch (error) {
                 showError(`Error resetting password: ${error.message}`);
             }
