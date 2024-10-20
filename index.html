@@ -25,8 +25,8 @@
     <div id="error"></div>
     <script>
         const SUPABASE_URL = 'https://nlkwvxqggvlmjbeympzi.supabase.co'
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sa3d2eHFnZ3ZsbWpiZXltcHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NjAwOTksImV4cCI6MjA0MjQzNjA5OX0.nbtya7nRxzHtgTnIek3dn21gnhnuXNIfTl-fF7xKUY0'
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sa3d2eHFnZ3ZsbWpiZXltcHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NjAwOTksImV4cCI6MjA0MjQzNjA5OX0.nbtya7nRxzHtgTnIek3dn21gnhnuXNIfTl-fF7xKUY0f’
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
         function getURLParameter(name) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -35,17 +35,14 @@
 
         async function handleRedirect() {
             const code = getURLParameter('code');
-
             if (!code) {
                 showError('Invalid or expired link. Please request a new password reset link.');
                 return;
             }
 
             try {
-                const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code)
+                const { data, error } = await supabase.auth.exchangeCodeForSession(code);
                 if (error) throw error;
-
-                localStorage.setItem('resetToken', data.session.access_token);
                 showMessage('Verification successful. You can now reset your password.');
             } catch (error) {
                 showError(`Error verifying code: ${error.message}`);
@@ -63,28 +60,17 @@
         async function resetPassword(event) {
             event.preventDefault();
             const newPassword = document.getElementById('newPassword').value;
-            const token = localStorage.getItem('resetToken');
 
             if (newPassword.length < 6) {
                 showError('Password should be at least 6 characters.');
                 return;
             }
 
-            if (!token) {
-                showError('No reset token found. Please request a new password reset link.');
-                return;
-            }
-
             try {
-                const { data, error } = await supabaseClient.auth.updateUser(
-                    { password: newPassword }
-                )
-
+                const { data, error } = await supabase.auth.updateUser({ password: newPassword });
                 if (error) throw error;
-
                 showMessage('Password reset successful. You can now close this page and return to the app.');
                 document.getElementById('resetForm').style.display = 'none';
-                localStorage.removeItem('resetToken');
             } catch (error) {
                 showError(`Error resetting password: ${error.message}`);
             }
