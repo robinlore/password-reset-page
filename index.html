@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Your Password</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
         h1 { color: #333; }
@@ -13,7 +14,6 @@
         #message { color: green; margin-top: 10px; }
         #error { color: red; margin-top: 10px; }
     </style>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <h1>Reset Your Password</h1>
@@ -25,68 +25,62 @@
     <div id="error"></div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const SUPABASE_URL = 'https://nlkwvxqggvlmjbeympzi.supabase.co'
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sa3d2eHFnZ3ZsbWpiZXltcHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NjAwOTksImV4cCI6MjA0MjQzNjA5OX0.nbtya7nRxzHtgTnIek3dn21gnhnuXNIfTl-fF7xKUY0'
-            
-            if (typeof supabase === 'undefined') {
-                console.error('Supabase library not loaded properly');
+        const SUPABASE_URL = 'https://nlkwvxqggvlmjbeympzi.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sa3d2eHFnZ3ZsbWpiZXltcHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NjAwOTksImV4cCI6MjA0MjQzNjA5OX0.nbtya7nRxzHtgTnIek3dn21gnhnuXNIfTl-fF7xKUY0'
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+        function getURLParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        async function handleRedirect() {
+            const code = getURLParameter('code');
+            const code_verifier = localStorage.getItem('code_verifier');
+
+            if (!code) {
+                showError('Invalid or expired link. Please request a new password reset link.');
                 return;
             }
-            
-            const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-            function getURLParameter(name) {
-                const urlParams = new URLSearchParams(window.location.search);
-                return urlParams.get(name);
+            try {
+                const { data, error } = await supabase.auth.exchangeCodeForSession(code, code_verifier);
+                if (error) throw error;
+                showMessage('Verification successful. You can now reset your password.');
+            } catch (error) {
+                showError(`Error verifying code: ${error.message}`);
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('error').textContent = message;
+        }
+
+        function showMessage(message) {
+            document.getElementById('message').textContent = message;
+        }
+
+        async function resetPassword(event) {
+            event.preventDefault();
+            const newPassword = document.getElementById('newPassword').value;
+
+            if (newPassword.length < 6) {
+                showError('Password should be at least 6 characters.');
+                return;
             }
 
-            async function handleRedirect() {
-                const code = getURLParameter('code');
-                if (!code) {
-                    showError('Invalid or expired link. Please request a new password reset link.');
-                    return;
-                }
-
-                try {
-                    const { data, error } = await client.auth.exchangeCodeForSession(code);
-                    if (error) throw error;
-                    showMessage('Verification successful. You can now reset your password.');
-                } catch (error) {
-                    showError(`Error verifying code: ${error.message}`);
-                }
+            try {
+                const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+                if (error) throw error;
+                showMessage('Password reset successful. You can now close this page and return to the app.');
+                document.getElementById('resetForm').style.display = 'none';
+            } catch (error) {
+                showError(`Error resetting password: ${error.message}`);
             }
+        }
 
-            function showError(message) {
-                document.getElementById('error').textContent = message;
-            }
-
-            function showMessage(message) {
-                document.getElementById('message').textContent = message;
-            }
-
-            async function resetPassword(event) {
-                event.preventDefault();
-                const newPassword = document.getElementById('newPassword').value;
-
-                if (newPassword.length < 6) {
-                    showError('Password should be at least 6 characters.');
-                    return;
-                }
-
-                try {
-                    const { data, error } = await client.auth.updateUser({ password: newPassword });
-                    if (error) throw error;
-                    showMessage('Password reset successful. You can now close this page and return to the app.');
-                    document.getElementById('resetForm').style.display = 'none';
-                } catch (error) {
-                    showError(`Error resetting password: ${error.message}`);
-                }
-            }
-
-            document.getElementById('resetForm').addEventListener('submit', resetPassword);
-            handleRedirect();
-        });
+        document.getElementById('resetForm').addEventListener('submit', resetPassword);
+        handleRedirect();
     </script>
 </body>
 </html>
