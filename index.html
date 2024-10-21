@@ -17,7 +17,7 @@
 </head>
 <body>
     <h1>Reset Your Password</h1>
-    <form id="resetForm">
+    <form id="resetForm" style="display:none;">
         <input type="password" id="newPassword" placeholder="Enter new password" required>
         <button type="submit">Reset Password</button>
     </form>
@@ -36,17 +36,16 @@
 
         async function handleRedirect() {
             const code = getURLParameter('code');
-            const code_verifier = localStorage.getItem('code_verifier');
-
             if (!code) {
                 showError('Invalid or expired link. Please request a new password reset link.');
                 return;
             }
 
             try {
-                const { data, error } = await supabase.auth.exchangeCodeForSession(code, code_verifier);
+                const { data, error } = await supabase.auth.exchangeCodeForSession(code);
                 if (error) throw error;
                 showMessage('Verification successful. You can now reset your password.');
+                document.getElementById('resetForm').style.display = 'block';
             } catch (error) {
                 showError(`Error verifying code: ${error.message}`);
             }
