@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Your Password</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
         h1 { color: #333; }
@@ -25,9 +25,14 @@
     <div id="error"></div>
 
     <script>
+      window.addEventListener('error', function(e) {
+        console.error('Script error:', e);
+      });
+    </script>
+    <script>
         const SUPABASE_URL = 'https://nlkwvxqggvlmjbeympzi.supabase.co'
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sa3d2eHFnZ3ZsbWpiZXltcHppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NjAwOTksImV4cCI6MjA0MjQzNjA5OX0.nbtya7nRxzHtgTnIek3dn21gnhnuXNIfTl-fF7xKUY0'
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
         function getURLParameter(name) {
             const urlParams = new URLSearchParams(window.location.search);
